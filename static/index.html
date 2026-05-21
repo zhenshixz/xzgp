@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小智股票精选 - A股智能股票查询与风险警示工具</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- ECharts CDN -->
+    <script src="https://fastly.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: rgba(255, 255, 255, 0.75);
+            --card-border: rgba(15, 23, 42, 0.08);
+            --primary: #2563eb;
+            --primary-glow: rgba(37, 99, 235, 0.08);
+            --primary-gradient: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            
+            --risk-low: #16a34a;
+            --risk-low-glow: rgba(22, 163, 74, 0.2);
+            --risk-medium: #d97706;
+            --risk-medium-glow: rgba(217, 119, 6, 0.2);
+            --risk-high: #dc2626;
+            --risk-high-glow: rgba(220, 38, 38, 0.25);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
+            background-attachment: fixed;
+            padding-bottom: 60px;
+            overflow-x: hidden;
+            font-size: 18px; /* Increased from default */
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(15, 23, 42, 0.15);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(15, 23, 42, 0.25);
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Header styling */
+        header {
+            margin-top: 30px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+            padding-bottom: 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .logo-icon {
+            font-size: 32px; /* Increased from 28px */
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 12px var(--primary-glow));
+        }
+
+        .logo-text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 30px; /* Increased from 24px */
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            background: linear-gradient(to right, #0f172a, #475569);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-tag {
+            font-size: 15px; /* Increased from 12px */
+            background: rgba(15, 23, 42, 0.03);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            padding: 8px 16px; /* Increased from 6px 14px */
+            border-radius: 20px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-tag i {
+            color: var(--primary);
+        }
+
+        /* Search Section */
+        .search-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 50px;
+            position: relative;
+        }
+
+        .search-container {
+            width: 100%;
+            max-width: 650px;
+            position: relative;
+            z-index: 100;
+        }
+
+        .search-box {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(15, 23, 42, 0.12);
+            border-radius: 16px;
+            padding: 22px 28px; /* Increased from 18px 24px */
+            font-size: 22px; /* Increased from 16px */
+            color: #0f172a;
+            outline: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.08);
+            backdrop-filter: blur(10px);
+            padding-right: 60px;
+        }
+
+        .search-box:focus {
+            border-color: var(--primary);
+            box-shadow: 
+                0 10px 30px -10px rgba(15, 23, 42, 0.08),
+                0 0 15px var(--primary-glow);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 28px; /* Increased from 24px */
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 22px; /* Increased from 18px */
+            pointer-events: none;
+            transition: color 0.3s;
+        }
+
+        .search-box:focus + .search-icon {
+            color: var(--primary);
+        }
+
+        /* Search History Chip list */
+        .history-container {
+            width: 100%;
+            max-width: 650px;
+            margin-top: 14px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .history-title {
+            font-size: 16px; /* Increased from 12px */
+            color: var(--text-muted);
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .history-list {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            flex-grow: 1;
+        }
+
+        .history-list::-webkit-scrollbar {
+            display: none;
+        }
+
+        .history-chip {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            color: var(--text-main);
+            padding: 8px 16px; /* Increased from 5px 12px */
+            border-radius: 20px;
+            font-size: 15px; /* Increased from 12px */
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            display: inline-block;
+        }
+
+        .history-chip:hover {
+            border-color: var(--primary);
+            background: var(--primary-glow);
+            color: var(--primary);
+        }
+
+        .clear-history-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 16px; /* Increased from 12px */
+            padding: 6px;
+            transition: color 0.2s;
+            outline: none;
+        }
+
+        .clear-history-btn:hover {
+            color: var(--risk-high);
+        }
+
+        /* Auto-complete Dropdown */
+        .suggestions-list {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+            display: none;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+        }
+
+        .suggestion-item {
+            padding: 18px 24px; /* Increased from 14px 20px */
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+            transition: all 0.2s;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover {
+            background: rgba(15, 23, 42, 0.03);
+        }
+
+        .suggestion-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .suggestion-code {
+            font-weight: 700;
+            color: var(--primary);
+            font-family: 'Outfit', sans-serif;
+            background: rgba(37, 99, 235, 0.08);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 16px; /* Increased from 13px */
+        }
+
+        .suggestion-name {
+            font-weight: 600;
+            color: #0f172a;
+            font-size: 18px; /* Increased */
+        }
+
+        .suggestion-market {
+            font-size: 15px; /* Increased from 12px */
+            color: var(--text-muted);
+            background: rgba(15, 23, 42, 0.03);
+            padding: 3px 10px;
+            border-radius: 6px;
+        }
+
+        /* Dashboard Intro state */
+        .intro-container {
+            text-align: center;
+            max-width: 750px;
+            margin: 60px auto;
+            animation: fadeIn 0.8s ease;
+        }
+
+        .intro-title {
+            font-size: 32px; /* Increased from 28px */
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .intro-desc {
+            color: var(--text-muted);
+            font-size: 18px; /* Increased from 15px */
+            line-height: 1.8;
+            margin-bottom: 40px;
+        }
+
+        .intro-features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            text-align: left;
+        }
+
+        .intro-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.02);
+            transition: all 0.3s;
+        }
+
+        .intro-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(37, 99, 235, 0.3);
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.08);
+        }
+
+        .intro-card i {
+            font-size: 30px; /* Increased from 24px */
+            color: var(--primary);
+            margin-bottom: 14px;
+        }
+
+        .intro-card h4 {
+            font-size: 18px; /* Increased from 15px */
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .intro-card p {
+            font-size: 15px; /* Increased from 12px */
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Loading / Shimmer effect */
+        .loading-container {
+            display: none;
+            text-align: center;
+            margin: 80px auto;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(37, 99, 235, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 24px;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        /* Main Dashboard Layout */
+        .dashboard {
+            display: none;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @media (min-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 380px 1fr; /* Increased sidebar space */
+            }
+        }
+
+        /* Sidebar info */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 4px 30px rgba(15, 23, 42, 0.03);
+            transition: all 0.3s;
+        }
+
+        .glass-card:hover {
+            border-color: rgba(15, 23, 42, 0.15);
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+        }
+
+        .card-title {
+            font-size: 20px; /* Increased from 16px */
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+            padding-bottom: 14px;
+        }
+
+        .card-title i {
+            color: var(--primary);
+        }
+
+        /* Stock Base Info Header */
+        .stock-header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .stock-abbr {
+            font-size: 34px; /* Increased from 24px */
+            font-weight: 800;
+            margin-bottom: 6px;
+            color: #0f172a;
+        }
+
+        .stock-code-badge {
+            display: inline-block;
+            font-family: 'Outfit', sans-serif;
+            background: rgba(15, 23, 42, 0.04);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            color: var(--text-muted);
+            font-size: 18px; /* Increased from 13px */
+            font-weight: 600;
+            padding: 6px 16px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Grid Data List */
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px; /* Increased spacing */
+        }
+
+        .data-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .data-label {
+            font-size: 15px; /* Increased from 12px */
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .data-value {
+            font-size: 18px; /* Increased from 14px */
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        /* Risk alert panel */
+        .risk-status-panel {
+            display: flex;
+            align-items: flex-start;
+            gap: 18px;
+            margin-bottom: 20px;
+        }
+
+        .risk-indicator {
+            width: 56px; /* Increased from 48px */
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px; /* Increased from 22px */
+            flex-shrink: 0;
+            transition: all 0.3s;
+        }
+
+        /* Pulsing indicator colors */
+        .risk-indicator.low {
+            background-color: rgba(22, 163, 74, 0.1);
+            color: var(--risk-low);
+            border: 1px solid rgba(22, 163, 74, 0.2);
+            box-shadow: 0 0 15px var(--risk-low-glow);
+            animation: pulse-low 2s infinite;
+        }
+
+        .risk-indicator.medium {
+            background-color: rgba(217, 119, 6, 0.1);
+            color: var(--risk-medium);
+            border: 1px solid rgba(217, 119, 6, 0.2);
+            box-shadow: 0 0 15px var(--risk-medium-glow);
+            animation: pulse-medium 2s infinite;
+        }
+
+        .risk-indicator.high, .risk-indicator.critical {
+            background-color: rgba(220, 38, 38, 0.1);
+            color: var(--risk-high);
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            box-shadow: 0 0 15px var(--risk-high-glow);
+            animation: pulse-high 2s infinite;
+        }
+
+        .risk-info-text {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .risk-title {
+            font-size: 20px; /* Increased from 15px */
+            font-weight: 700;
+        }
+
+        .risk-desc {
+            font-size: 16px; /* Increased from 13px */
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Warnings List */
+        .warnings-list {
+            max-height: 350px; /* Increased display height */
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding-right: 4px;
+        }
+
+        .warning-item {
+            background: rgba(15, 23, 42, 0.015);
+            border: 1px solid rgba(15, 23, 42, 0.05);
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .warning-item:hover {
+            border-color: rgba(220, 38, 38, 0.2);
+            background: rgba(220, 38, 38, 0.02);
+        }
+
+        .warning-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px; /* Increased from 11px */
+        }
+
+        .warning-tag {
+            background: rgba(220, 38, 38, 0.08);
+            color: var(--risk-high);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 700;
+        }
+
+        .warning-date {
+            color: var(--text-muted);
+        }
+
+        .warning-headline {
+            font-size: 16px; /* Increased from 13px */
+            font-weight: 600;
+            line-height: 1.5;
+            color: #0f172a;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .warning-headline:hover {
+            color: var(--primary);
+            text-decoration: underline;
+        }
+
+        .no-warnings {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            font-size: 16px; /* Increased from 13px */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .no-warnings i {
+            font-size: 38px; /* Increased from 32px */
+            color: var(--risk-low);
+            filter: drop-shadow(0 0 8px var(--risk-low-glow));
+        }
+
+        /* Business profile details */
+        .profile-text {
+            font-size: 17px; /* Increased from 13px */
+            color: var(--text-muted);
+            line-height: 1.8; /* Increased line height for easier reading */
+            margin-bottom: 14px;
+        }
+
+        .profile-collapse {
+            display: -webkit-box;
+            -webkit-line-clamp: 5;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .read-more-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 16px; /* Increased from 13px */
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            outline: none;
+            padding: 6px 0;
+        }
+
+        .read-more-btn:hover {
+            text-decoration: underline;
+        }
+
+        /* Concept tags layout */
+        .concepts-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .concept-badge {
+            font-size: 14px; /* Increased from 11px */
+            font-weight: 600;
+            color: var(--primary);
+            background: var(--primary-glow);
+            border: 1px solid rgba(37, 99, 235, 0.15);
+            padding: 6px 14px; /* Increased from 4px 10px */
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .concept-badge:hover {
+            background: rgba(37, 99, 235, 0.15);
+            transform: translateY(-1px);
+        }
+
+        /* Main Workspace Panels */
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Charts & Finance tables grid */
+        .financial-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        @media (min-width: 1200px) {
+            .financial-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .finance-card {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .chart-container {
+            height: 280px; /* Increased chart height */
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        /* Tables */
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid rgba(15, 23, 42, 0.05);
+            border-radius: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 16px; /* Increased from 13px */
+        }
+
+        th {
+            background: rgba(15, 23, 42, 0.01);
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 14px 18px; /* Increased from 12px 16px */
+            border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+        }
+
+        td {
+            padding: 14px 18px; /* Increased from 12px 16px */
+            border-bottom: 1px solid rgba(15, 23, 42, 0.04);
+            color: #0f172a;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .td-profit {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+        }
+
+        .td-growth {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+        }
+
+        .growth-up {
+            color: #dc2626;
+        }
+
+        .growth-down {
+            color: #16a34a;
+        }
+
+        .growth-neutral {
+            color: #0f172a;
+        }
+
+        /* Animations */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse-low {
+            0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(22, 163, 74, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+        }
+
+        @keyframes pulse-medium {
+            0% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(217, 119, 6, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0); }
+        }
+
+        @keyframes pulse-high {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.5); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+
+        /* Mobile Tabs Styles */
+        .mobile-tabs {
+            display: none; /* Hidden on desktop */
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 8px;
+            margin-bottom: 10px;
+            backdrop-filter: blur(16px);
+            gap: 8px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 14px 10px;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-muted);
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        .tab-btn.active {
+            background: var(--primary-gradient);
+            color: #ffffff;
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        @media (max-width: 1023px) {
+            .mobile-tabs {
+                display: flex;
+            }
+            
+            /* Hide cards that don't belong to the active tab on mobile */
+            .dashboard.tab-overview-active .tab-content-risk,
+            .dashboard.tab-overview-active .tab-content-finance {
+                display: none !important;
+            }
+            
+            .dashboard.tab-risk-active .tab-content-overview,
+            .dashboard.tab-risk-active .tab-content-finance {
+                display: none !important;
+            }
+            
+            .dashboard.tab-finance-active .tab-content-overview,
+            .dashboard.tab-finance-active .tab-content-risk {
+                display: none !important;
+            }
+        }
+
+        .card-header-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+            padding-bottom: 14px;
+            margin-bottom: 20px;
+        }
+
+        .mini-toggle {
+            display: none;
+            background: rgba(15, 23, 42, 0.03);
+            border-radius: 8px;
+            padding: 3px;
+            gap: 2px;
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        .toggle-btn.active {
+            background: #ffffff;
+            color: var(--primary);
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+        }
+
+        @media (max-width: 767px) {
+            .intro-features {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            .intro-card {
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 24px;
+            }
+            .mini-toggle {
+                display: flex;
+            }
+            .finance-card.show-table .chart-container {
+                display: none !important;
+            }
+            .finance-card.show-chart .table-wrapper {
+                display: none !important;
+            }
+            .data-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 14px;
+            }
+            .concepts-list {
+                gap: 8px;
+            }
+            .concept-badge {
+                font-size: 13px;
+                padding: 4px 10px;
+            }
+            .warnings-list {
+                max-height: 200px;
+            }
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 60px;
+            text-align: center;
+            font-size: 14px; /* Increased from 12px */
+            color: var(--text-muted);
+            border-top: 1px solid rgba(15, 23, 42, 0.06);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <i class="fa-solid fa-chart-line logo-icon"></i>
+                <h1 class="logo-text">小智股票精选</h1>
+            </div>
+            <div class="header-tag">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>A股智能退市与财务风险警示系统</span>
+            </div>
+        </header>
+
+        <!-- Search Bar Section -->
+        <div class="search-section">
+            <div class="search-container">
+                <input type="text" class="search-box" id="search-input" placeholder="输入股票名称、简拼或代码..." autocomplete="off">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <!-- Dropdown suggestions -->
+                <div class="suggestions-list" id="suggestions-box"></div>
+            </div>
+
+            <!-- Search History -->
+            <div class="history-container" id="history-box">
+                <span class="history-title">历史查询:</span>
+                <div class="history-list" id="history-list"></div>
+                <button class="clear-history-btn" id="btn-clear-history" title="清除历史">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Initial Intro Screen -->
+        <div class="intro-container" id="intro-screen">
+            <h2 class="intro-title">A股核心基本面与退市警告查询</h2>
+            <p class="intro-desc">
+                小智股票精选致力于为您提供上市公司的最新财务指标分析以及实时的ST与退市风险警示。通过智能匹配和大数据采集，全方位扫描公司最近一年的公告 and 新闻，快速排查退市风险。
+            </p>
+            <div class="intro-features">
+                <div class="intro-card">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <h4>风险警示</h4>
+                    <p>自动检索近1年内被实施ST、*ST、面值退市及各类监管机构警告信息。</p>
+                </div>
+                <div class="intro-card">
+                    <i class="fa-solid fa-chart-bar"></i>
+                    <h4>多维利润</h4>
+                    <p>自动解析并精确展示近3年以及最新4个季度的归母净利润及增幅情况。</p>
+                </div>
+                <div class="intro-card">
+                    <i class="fa-solid fa-database"></i>
+                    <h4>最新真数</h4>
+                    <p>所有数据实时同步东方财富财务及F10最新数据库，杜绝一切模拟及脱节数据。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading spinner -->
+        <div class="loading-container" id="loading-screen">
+            <div class="spinner"></div>
+            <p style="color: var(--text-muted);">正在连接东财云服务，分析上市公司大数据，请稍候...</p>
+        </div>
+
+        <!-- Dashboard Result Display -->
+        <div class="dashboard tab-overview-active" id="dashboard-screen">
+            
+            <!-- Mobile Navigation Tabs (Only visible on mobile) -->
+            <div class="mobile-tabs" id="mobile-tabs-bar">
+                <button class="tab-btn active" data-tab="tab-overview">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>行情基本面</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-risk">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span>风险扫描</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-finance">
+                    <i class="fa-solid fa-coins"></i>
+                    <span>财务利润</span>
+                </button>
+            </div>
+            
+            <!-- Sidebar: Base Info and Risk Indicators -->
+            <div class="sidebar">
+                
+                <!-- Stock Header and Details -->
+                <div class="glass-card tab-content-overview" style="text-align: center;">
+                    <div class="stock-header">
+                        <div class="stock-abbr" id="lbl-stock-name">万科A</div>
+                        <div class="stock-code-badge" id="lbl-stock-code">000002.SZ</div>
+                    </div>
+                    <div class="data-grid" style="text-align: left;">
+                        <div class="data-item">
+                            <span class="data-label">所在行业</span>
+                            <span class="data-value" id="lbl-industry">房地产业</span>
+                        </div>
+                        <div class="data-item">
+                            <span class="data-label">上市交易所</span>
+                            <span class="data-value" id="lbl-exchange">深圳证券交易所</span>
+                        </div>
+                        <div class="data-item">
+                            <span class="data-label">董事长</span>
+                            <span class="data-value" id="lbl-chairman">郁亮</span>
+                        </div>
+                        <div class="data-item">
+                            <span class="data-label">法人代表</span>
+                            <span class="data-value" id="lbl-legal-rep">郁亮</span>
+                        </div>
+                        <div class="data-item">
+                            <span class="data-label">注册资本</span>
+                            <span class="data-value" id="lbl-reg-capital">119.3亿</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Risk warning board -->
+                <div class="glass-card tab-content-risk">
+                    <div class="card-title">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>近1年ST/退市风险扫描</span>
+                    </div>
+                    
+                    <div class="risk-status-panel">
+                        <div class="risk-indicator" id="risk-light">
+                            <i class="fa-solid fa-shield-check"></i>
+                        </div>
+                        <div class="risk-info-text">
+                            <span class="risk-title" id="lbl-risk-level">低风险</span>
+                            <span class="risk-desc" id="lbl-risk-desc">未发现明显退市或ST警告。</span>
+                        </div>
+                    </div>
+
+                    <div class="warnings-list" id="warnings-container">
+                        <!-- warnings item will be appended here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Panel: Corporate survey and Finance charts -->
+            <div class="main-panel">
+                
+                <!-- Daily K-line Card -->
+                <div class="glass-card tab-content-overview">
+                    <div class="card-title" style="margin-bottom: 10px;">
+                        <i class="fa-solid fa-chart-candlestick"></i>
+                        <span>股价历史走势 (日K线 & 移动平均线)</span>
+                    </div>
+                    <div class="chart-container" id="kline-chart" style="height: 330px;"></div>
+                </div>
+
+                <!-- Business survey introduction -->
+                <div class="glass-card tab-content-overview">
+                    <div class="card-title">
+                        <i class="fa-solid fa-building"></i>
+                        <span>公司主营业务与基本面简介</span>
+                    </div>
+                    <p class="profile-text" id="lbl-description-abbr">
+                        加载中...
+                    </p>
+                    <p class="profile-text profile-collapse" id="lbl-description-full" style="display: none;">
+                        加载中...
+                    </p>
+                    <button class="read-more-btn" id="btn-read-more" style="display: none;">
+                        <span>展开全部简介</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+                    <div style="margin-top: 18px; padding-top: 15px; border-top: 1px solid rgba(15, 23, 42, 0.05);">
+                        <span class="data-label" style="display: block; margin-bottom: 10px; font-weight: 600;">所属A股概念板块</span>
+                        <div class="concepts-list" id="lbl-concepts">
+                            <!-- Concept badges appended by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Net Profits & Growth Rate section -->
+                <div class="financial-container tab-content-finance">
+                    
+                    <!-- Yearly profits chart and table -->
+                    <div class="glass-card finance-card show-chart" id="card-yearly">
+                        <div class="card-header-wrapper">
+                            <div class="card-title">
+                                <i class="fa-solid fa-calendar-days"></i>
+                                <span>近3年年度归母净利润</span>
+                            </div>
+                            <div class="mini-toggle" data-target="card-yearly">
+                                <button class="toggle-btn active" data-view="chart">图表</button>
+                                <button class="toggle-btn" data-view="table">数据</button>
+                            </div>
+                        </div>
+                        <div class="chart-container" id="yearly-chart"></div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>会计年度</th>
+                                        <th>归母净利润</th>
+                                        <th>同比增长率</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-yearly-body">
+                                    <!-- Rows populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Quarterly profits chart and table -->
+                    <div class="glass-card finance-card show-chart" id="card-quarterly">
+                        <div class="card-header-wrapper">
+                            <div class="card-title">
+                                <i class="fa-solid fa-clock"></i>
+                                <span>近4个季度单季利润 (计算真数)</span>
+                            </div>
+                            <div class="mini-toggle" data-target="card-quarterly">
+                                <button class="toggle-btn active" data-view="chart">图表</button>
+                                <button class="toggle-btn" data-view="table">数据</button>
+                            </div>
+                        </div>
+                        <div class="chart-container" id="quarterly-chart"></div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>报告季度</th>
+                                        <th>单季归母净利润</th>
+                                        <th>单季同比增长</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-quarterly-body">
+                                    <!-- Rows populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>小智股票精选 | 基于真实上市公司F10财务与公告数据</p>
+            <p style="margin-top: 6px; opacity: 0.5;">免责声明：本工具所展示的信息仅供参考，不构成任何投资建议。</p>
+        </footer>
+    </div>
+
+    <!-- Frontend logic script -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const searchInput = document.getElementById("search-input");
+            const suggestionsBox = document.getElementById("suggestions-box");
+            
+            const introScreen = document.getElementById("intro-screen");
+            const loadingScreen = document.getElementById("loading-screen");
+            const dashboardScreen = document.getElementById("dashboard-screen");
+            
+            // Mobile tab navigation handler
+            const tabButtons = document.querySelectorAll(".tab-btn");
+            tabButtons.forEach(btn => {
+                btn.addEventListener("click", function() {
+                    tabButtons.forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    
+                    const tabName = btn.getAttribute("data-tab");
+                    dashboardScreen.className = "dashboard " + tabName + "-active";
+                    
+                    // Force ECharts resize on tab switch to prevent rendering width bugs
+                    setTimeout(() => {
+                        if (tabName === "tab-overview" && klineChart) {
+                            klineChart.resize();
+                        } else if (tabName === "tab-finance") {
+                            if (yearlyChart) yearlyChart.resize();
+                            if (quarterlyChart) quarterlyChart.resize();
+                        }
+                    }, 50);
+                });
+            });
+            
+            // Logo click to return to home/intro screen
+            const logoEl = document.querySelector(".logo");
+            logoEl.addEventListener("click", function() {
+                dashboardScreen.style.display = "none";
+                loadingScreen.style.display = "none";
+                introScreen.style.display = "block";
+                searchInput.value = "";
+                suggestionsBox.style.display = "none";
+            });
+            
+            // Mini toggles inside finance cards
+            document.querySelectorAll(".mini-toggle").forEach(toggle => {
+                const cardId = toggle.getAttribute("data-target");
+                const cardEl = document.getElementById(cardId);
+                const buttons = toggle.querySelectorAll(".toggle-btn");
+                
+                buttons.forEach(btn => {
+                    btn.addEventListener("click", () => {
+                        buttons.forEach(b => b.classList.remove("active"));
+                        btn.classList.add("active");
+                        
+                        const view = btn.getAttribute("data-view");
+                        if (view === "chart") {
+                            cardEl.classList.remove("show-table");
+                            cardEl.classList.add("show-chart");
+                            // Resize chart
+                            setTimeout(() => {
+                                if (cardId === "card-yearly" && yearlyChart) yearlyChart.resize();
+                                if (cardId === "card-quarterly" && quarterlyChart) quarterlyChart.resize();
+                            }, 50);
+                        } else {
+                            cardEl.classList.remove("show-chart");
+                            cardEl.classList.add("show-table");
+                        }
+                    });
+                });
+            });
+            
+            // Description Read More expander
+            const descAbbr = document.getElementById("lbl-description-abbr");
+            const descFull = document.getElementById("lbl-description-full");
+            const btnReadMore = document.getElementById("btn-read-more");
+            
+            let isExpanded = false;
+            btnReadMore.addEventListener("click", function() {
+                if (isExpanded) {
+                    descAbbr.style.display = "block";
+                    descFull.style.display = "none";
+                    btnReadMore.querySelector("span").textContent = "展开全部简介";
+                    btnReadMore.querySelector("i").className = "fa-solid fa-chevron-down";
+                } else {
+                    descAbbr.style.display = "none";
+                    descFull.style.display = "block";
+                    btnReadMore.querySelector("span").textContent = "收起部分简介";
+                    btnReadMore.querySelector("i").className = "fa-solid fa-chevron-up";
+                }
+                isExpanded = !isExpanded;
+            });
+            
+            // Search History LocalStorage Logic
+            const HISTORY_KEY = "xzgp_search_history";
+
+            function getHistory() {
+                try {
+                    const raw = localStorage.getItem(HISTORY_KEY);
+                    return raw ? JSON.parse(raw) : [];
+                } catch (e) {
+                    return [];
+                }
+            }
+
+            function saveHistory(history) {
+                try {
+                    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+                } catch (e) {
+                    // ignore
+                }
+            }
+
+            function addToHistory(code, name, quoteId) {
+                let history = getHistory();
+                history = history.filter(item => item.code !== code);
+                history.unshift({ code, name, quote_id: quoteId });
+                if (history.length > 8) {
+                    history = history.slice(0, 8);
+                }
+                saveHistory(history);
+                renderHistory();
+            }
+
+            function renderHistory() {
+                const history = getHistory();
+                const historyBox = document.getElementById("history-box");
+                const historyList = document.getElementById("history-list");
+                
+                if (history.length === 0) {
+                    historyBox.style.display = "none";
+                    return;
+                }
+                
+                historyList.innerHTML = "";
+                history.forEach(item => {
+                    const chip = document.createElement("div");
+                    chip.className = "history-chip";
+                    chip.textContent = `${item.name} (${item.code})`;
+                    chip.addEventListener("click", () => {
+                        searchInput.value = `${item.code} ${item.name}`;
+                        loadStockDashboard(item.code, item.quote_id);
+                    });
+                    historyList.appendChild(chip);
+                });
+                historyBox.style.display = "flex";
+            }
+
+            // Clear history handler
+            document.getElementById("btn-clear-history").addEventListener("click", () => {
+                localStorage.removeItem(HISTORY_KEY);
+                renderHistory();
+            });
+
+            // Initial render of history
+            renderHistory();
+            
+            // Search Input listener for Autocomplete suggestions
+            let debounceTimer;
+            searchInput.addEventListener("input", function() {
+                clearTimeout(debounceTimer);
+                const val = searchInput.value.trim();
+                if (!val) {
+                    suggestionsBox.style.display = "none";
+                    return;
+                }
+                
+                debounceTimer = setTimeout(() => {
+                    fetch(`/api/search?q=${encodeURIComponent(val)}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.length === 0) {
+                                suggestionsBox.style.display = "none";
+                                return;
+                            }
+                            suggestionsBox.innerHTML = "";
+                            data.forEach(item => {
+                                const div = document.createElement("div");
+                                div.className = "suggestion-item";
+                                div.innerHTML = `
+                                    <div class="suggestion-info">
+                                        <span class="suggestion-code">${item.code}</span>
+                                        <span class="suggestion-name">${item.name}</span>
+                                    </div>
+                                    <span class="suggestion-market">${item.security_typeName || '股票'}</span>
+                                `;
+                                div.addEventListener("click", () => {
+                                    searchInput.value = `${item.code} ${item.name}`;
+                                    suggestionsBox.style.display = "none";
+                                    loadStockDashboard(item.code, item.quote_id);
+                                });
+                                suggestionsBox.appendChild(div);
+                            });
+                            suggestionsBox.style.display = "block";
+                        });
+                }, 200);
+            });
+            
+            // Close suggestions on clicking outside
+            document.addEventListener("click", function(e) {
+                if (e.target !== searchInput) {
+                    suggestionsBox.style.display = "none";
+                }
+            });
+            
+            // Chart global instances
+            let yearlyChart = null;
+            let quarterlyChart = null;
+            let klineChart = null;
+            
+            // Function to load the stock details into dashboard
+            function loadStockDashboard(code, quoteId) {
+                introScreen.style.display = "none";
+                dashboardScreen.style.display = "none";
+                loadingScreen.style.display = "block";
+                
+                fetch(`/api/stock_info?code=${code}&quote_id=${quoteId}`)
+                    .then(res => res.json())
+                    .then(res => {
+                        loadingScreen.style.display = "none";
+                        if (!res.success) {
+                            alert(res.message || "获取股票信息失败");
+                            introScreen.style.display = "block";
+                            return;
+                        }
+                        
+                        // Save to history
+                        addToHistory(res.code, res.fundamentals.name, quoteId);
+                        
+                        // Populate Base Info
+                        const fundamentals = res.fundamentals;
+                        document.getElementById("lbl-stock-name").textContent = fundamentals.name;
+                        document.getElementById("lbl-stock-code").textContent = `${res.code}.${res.f10_code.substring(0, 2)}`;
+                        document.getElementById("lbl-industry").textContent = fundamentals.industry;
+                        document.getElementById("lbl-exchange").textContent = fundamentals.exchange;
+                        document.getElementById("lbl-chairman").textContent = fundamentals.chairman;
+                        document.getElementById("lbl-legal-rep").textContent = fundamentals.legal_rep;
+                        document.getElementById("lbl-reg-capital").textContent = fundamentals.reg_capital;
+                        
+                        // Company Description text handling
+                        const desc = fundamentals.description || "--";
+                        descFull.textContent = desc;
+                        if (desc.length > 140) {
+                            descAbbr.textContent = desc.substring(0, 140) + "...";
+                            descAbbr.style.display = "block";
+                            descFull.style.display = "none";
+                            btnReadMore.style.display = "flex";
+                        } else {
+                            descAbbr.textContent = desc;
+                            descAbbr.style.display = "block";
+                            descFull.style.display = "none";
+                            btnReadMore.style.display = "none";
+                        }
+                        
+                        // Populate Concept Tags
+                        const conceptsDiv = document.getElementById("lbl-concepts");
+                        conceptsDiv.innerHTML = "";
+                        if (res.concepts && res.concepts.length > 0) {
+                            res.concepts.forEach(concept => {
+                                const span = document.createElement("span");
+                                span.className = "concept-badge";
+                                span.textContent = concept;
+                                conceptsDiv.appendChild(span);
+                            });
+                        } else {
+                            conceptsDiv.innerHTML = `<span style="color: var(--text-muted); font-size: 13px;">暂无该股票的板块概念数据</span>`;
+                        }
+                        
+                        // Populate Risk Information
+                        const risk = res.risk;
+                        const riskLight = document.getElementById("risk-light");
+                        const lblRiskLevel = document.getElementById("lbl-risk-level");
+                        const lblRiskDesc = document.getElementById("lbl-risk-desc");
+                        const warningsContainer = document.getElementById("warnings-container");
+                        
+                        // Reset classes
+                        riskLight.className = "risk-indicator";
+                        
+                        if (risk.level === "Critical" || risk.level === "High") {
+                            riskLight.classList.add("high");
+                            riskLight.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
+                            lblRiskLevel.textContent = risk.level === "Critical" ? "退市/警示股票" : "高风险";
+                            lblRiskLevel.style.color = "var(--risk-high)";
+                        } else if (risk.level === "Medium") {
+                            riskLight.classList.add("medium");
+                            riskLight.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+                            lblRiskLevel.textContent = "中等风险";
+                            lblRiskLevel.style.color = "var(--risk-medium)";
+                        } else {
+                            riskLight.classList.add("low");
+                            riskLight.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+                            lblRiskLevel.textContent = "低风险";
+                            lblRiskLevel.style.color = "var(--risk-low)";
+                        }
+                        lblRiskDesc.textContent = risk.description;
+                        
+                        // Populate Warnings list
+                        warningsContainer.innerHTML = "";
+                        if (res.warnings && res.warnings.length > 0) {
+                            res.warnings.forEach(w => {
+                                const wDiv = document.createElement("div");
+                                wDiv.className = "warning-item";
+                                wDiv.innerHTML = `
+                                    <div class="warning-meta">
+                                        <span class="warning-tag">${w.type}</span>
+                                        <span class="warning-date">${w.date}</span>
+                                    </div>
+                                    <a href="${w.href}" target="_blank" class="warning-headline">${w.title}</a>
+                                `;
+                                warningsContainer.appendChild(wDiv);
+                            });
+                        } else {
+                            warningsContainer.innerHTML = `
+                                <div class="no-warnings">
+                                    <i class="fa-solid fa-shield-circle-check"></i>
+                                    <span>近1年内无退市警示、ST处罚或被出具终止上市警示公告。</span>
+                                </div>
+                            `;
+                        }
+                        
+                        // Populate Yearly profits table and chart
+                        const tableYearly = document.getElementById("table-yearly-body");
+                        tableYearly.innerHTML = "";
+                        const chartYearlyData = [...res.yearly_profits].reverse();
+                        
+                        res.yearly_profits.forEach(y => {
+                            const tr = document.createElement("tr");
+                            const growthClass = y.yoy > 0 ? "growth-up" : (y.yoy < 0 ? "growth-down" : "growth-neutral");
+                            const arrow = y.yoy > 0 ? "↑" : (y.yoy < 0 ? "↓" : "");
+                            
+                            tr.innerHTML = `
+                                <td>${y.year}</td>
+                                <td class="td-profit">${y.profit_str}</td>
+                                <td class="td-growth ${growthClass}">${y.yoy_str} ${arrow}</td>
+                            `;
+                            tableYearly.appendChild(tr);
+                        });
+                        
+                        // Populate Quarterly profits table and chart
+                        const tableQuarterly = document.getElementById("table-quarterly-body");
+                        tableQuarterly.innerHTML = "";
+                        const chartQuarterlyData = [...res.quarterly_profits].reverse();
+                        
+                        res.quarterly_profits.forEach(q => {
+                            const tr = document.createElement("tr");
+                            const growthClass = q.yoy > 0 ? "growth-up" : (q.yoy < 0 ? "growth-down" : "growth-neutral");
+                            const arrow = q.yoy > 0 ? "↑" : (q.yoy < 0 ? "↓" : "");
+                            
+                            tr.innerHTML = `
+                                <td>${q.quarter}</td>
+                                <td class="td-profit">${q.profit_str}</td>
+                                <td class="td-growth ${growthClass}">${q.yoy_str} ${arrow}</td>
+                            `;
+                            tableQuarterly.appendChild(tr);
+                        });
+                        
+                        // Show dashboard screen
+                        dashboardScreen.style.display = "grid";
+                        
+                        // Reset mobile tabs to overview default
+                        tabButtons.forEach(b => b.classList.remove("active"));
+                        if (tabButtons.length > 0) tabButtons[0].classList.add("active");
+                        dashboardScreen.className = "dashboard tab-overview-active";
+                        
+                        // Reset mini-toggles to chart view by default
+                        document.querySelectorAll(".finance-card").forEach(card => {
+                            card.classList.remove("show-table");
+                            card.classList.add("show-chart");
+                        });
+                        document.querySelectorAll(".mini-toggle").forEach(toggle => {
+                            const btns = toggle.querySelectorAll(".toggle-btn");
+                            btns.forEach(b => b.classList.remove("active"));
+                            const chartBtn = toggle.querySelector("[data-view='chart']");
+                            if (chartBtn) chartBtn.classList.add("active");
+                        });
+                        
+                        // Initialize or update ECharts
+                        renderYearlyChart(chartYearlyData);
+                        renderQuarterlyChart(chartQuarterlyData);
+                        renderKLineChart(res.klines);
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        loadingScreen.style.display = "none";
+                        introScreen.style.display = "block";
+                        alert("加载失败，请检查后端网络连接");
+                    });
+            }
+            
+            function renderYearlyChart(data) {
+                if (yearlyChart) {
+                    yearlyChart.dispose();
+                }
+                const dom = document.getElementById("yearly-chart");
+                yearlyChart = echarts.init(dom, 'light', { backgroundColor: 'transparent' });
+                
+                const years = data.map(item => item.year);
+                const profits = data.map(item => item.profit ? (item.profit / 1e8).toFixed(2) : 0);
+                const yoy = data.map(item => item.yoy || 0);
+                
+                const option = {
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'shadow' }
+                    },
+                    legend: {
+                        textStyle: { color: '#64748b', fontSize: 13 }
+                    },
+                    grid: {
+                        top: '18%',
+                        left: '3%',
+                        right: '3%',
+                        bottom: '5%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: years,
+                        axisLine: { lineStyle: { color: 'rgba(15,23,42,0.08)' } },
+                        axisLabel: { color: '#64748b', fontSize: 13 }
+                    },
+                    yAxis: [
+                        {
+                            type: 'value',
+                            name: '净利润(亿)',
+                            nameTextStyle: { color: '#64748b', fontSize: 13 },
+                            axisLabel: { color: '#64748b', fontSize: 13 },
+                            splitLine: { lineStyle: { color: 'rgba(15,23,42,0.05)' } }
+                        },
+                        {
+                            type: 'value',
+                            name: '增速(%)',
+                            nameTextStyle: { color: '#64748b', fontSize: 13 },
+                            axisLabel: { color: '#64748b', formatter: '{value}%', fontSize: 13 },
+                            splitLine: { show: false }
+                        }
+                    ],
+                    series: [
+                        {
+                            name: '归母净利润',
+                            type: 'bar',
+                            barWidth: '50%',
+                            data: profits,
+                            itemStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: '#3b82f6' },
+                                    { offset: 1, color: '#60a5fa' }
+                                ]),
+                                borderRadius: [4, 4, 0, 0]
+                            }
+                        },
+                        {
+                            name: '同比增长',
+                            type: 'line',
+                            yAxisIndex: 1,
+                            data: yoy,
+                            smooth: true,
+                            itemStyle: { color: '#dc2626' },
+                            lineStyle: { width: 2.5 }
+                        }
+                    ]
+                };
+                
+                yearlyChart.setOption(option);
+            }
+            
+            function renderQuarterlyChart(data) {
+                if (quarterlyChart) {
+                    quarterlyChart.dispose();
+                }
+                const dom = document.getElementById("quarterly-chart");
+                quarterlyChart = echarts.init(dom, 'light', { backgroundColor: 'transparent' });
+                
+                const quarters = data.map(item => {
+                    let name = item.quarter;
+                    name = name.replace("2026年", "26年").replace("2025年", "25年").replace("2024年", "24年").replace("2023年", "23年");
+                    name = name.replace("一季度", "Q1").replace("二季度", "Q2").replace("三季度", "Q3").replace("四季度", "Q4");
+                    return name;
+                });
+                const profits = data.map(item => item.profit ? (item.profit / 1e8).toFixed(2) : 0);
+                const yoy = data.map(item => item.yoy || 0);
+                
+                const option = {
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'shadow' }
+                    },
+                    legend: {
+                        textStyle: { color: '#64748b', fontSize: 13 }
+                    },
+                    grid: {
+                        top: '18%',
+                        left: '3%',
+                        right: '3%',
+                        bottom: '5%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: quarters,
+                        axisLine: { lineStyle: { color: 'rgba(15,23,42,0.08)' } },
+                        axisLabel: { color: '#64748b', interval: 0, fontSize: 12 }
+                    },
+                    yAxis: [
+                        {
+                            type: 'value',
+                            name: '单季利润(亿)',
+                            nameTextStyle: { color: '#64748b', fontSize: 13 },
+                            axisLabel: { color: '#64748b', fontSize: 13 },
+                            splitLine: { lineStyle: { color: 'rgba(15,23,42,0.05)' } }
+                        },
+                        {
+                            type: 'value',
+                            name: '增速(%)',
+                            nameTextStyle: { color: '#64748b', fontSize: 13 },
+                            axisLabel: { color: '#64748b', formatter: '{value}%', fontSize: 13 },
+                            splitLine: { show: false }
+                        }
+                    ],
+                    series: [
+                        {
+                            name: '单季净利润',
+                            type: 'bar',
+                            barWidth: '50%',
+                            data: profits,
+                            itemStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: '#10b981' },
+                                    { offset: 1, color: '#34d399' }
+                                ]),
+                                borderRadius: [4, 4, 0, 0]
+                            }
+                        },
+                        {
+                            name: '单季同比',
+                            type: 'line',
+                            yAxisIndex: 1,
+                            data: yoy,
+                            smooth: true,
+                            itemStyle: { color: '#d97706' },
+                            lineStyle: { width: 2.5 }
+                        }
+                    ]
+                };
+                
+                quarterlyChart.setOption(option);
+            }
+
+            function calculateMA(dayCount, data) {
+                var result = [];
+                for (var i = 0, len = data.length; i < len; i++) {
+                    if (i < dayCount) {
+                        result.push('-');
+                        continue;
+                    }
+                    var sum = 0;
+                    for (var j = 0; j < dayCount; j++) {
+                        sum += data[i - j][1]; // close price is index 1
+                    }
+                    result.push(parseFloat((sum / dayCount).toFixed(2)));
+                }
+                return result;
+            }
+
+            function renderKLineChart(klines) {
+                if (klineChart) {
+                    klineChart.dispose();
+                }
+                if (!klines || klines.length === 0) {
+                    document.getElementById("kline-chart").innerHTML = `<div style="text-align: center; line-height: 330px; color: var(--text-muted); font-size: 18px;">暂无日K线行情数据</div>`;
+                    return;
+                }
+
+                const dom = document.getElementById("kline-chart");
+                klineChart = echarts.init(dom, 'light', { backgroundColor: 'transparent' });
+
+                const dates = klines.map(item => item.date);
+                const data = klines.map(item => [item.open, item.close, item.low, item.high]);
+
+                const ma5 = calculateMA(5, data);
+                const ma10 = calculateMA(10, data);
+
+                const option = {
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'cross'
+                        },
+                        formatter: function (params) {
+                            let res = '';
+                            params.forEach(p => {
+                                if (p.seriesName === '日K线') {
+                                    const val = p.value;
+                                    res += `<strong style="font-size:15px;">${p.name}</strong><br/>`;
+                                    res += `开盘: ${val[1]}<br/>`;
+                                    res += `收盘: ${val[2]}<br/>`;
+                                    res += `最低: ${val[3]}<br/>`;
+                                    res += `最高: ${val[4]}<br/>`;
+                                } else {
+                                    if (p.value !== '-') {
+                                        res += `${p.seriesName}: ${p.value}<br/>`;
+                                    }
+                                }
+                            });
+                            return res;
+                        }
+                    },
+                    legend: {
+                        data: ['日K线', 'MA5', 'MA10'],
+                        top: '0%',
+                        textStyle: { color: '#64748b', fontSize: 13 }
+                    },
+                    grid: {
+                        top: '15%',
+                        left: '3%',
+                        right: '3%',
+                        bottom: '5%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: dates,
+                        axisLine: { lineStyle: { color: 'rgba(15,23,42,0.08)' } },
+                        axisLabel: { color: '#64748b', fontSize: 12 }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        scale: true,
+                        axisLabel: { color: '#64748b', fontSize: 12 },
+                        splitLine: { lineStyle: { color: 'rgba(15,23,42,0.05)' } }
+                    },
+                    series: [
+                        {
+                            name: '日K线',
+                            type: 'candlestick',
+                            data: data,
+                            barWidth: '60%',       // Wider bars
+                            barMaxWidth: 35,       // Limit maximum bar width
+                            itemStyle: {
+                                color: '#dc2626',      // Up
+                                color0: '#16a34a',     // Down
+                                borderColor: '#dc2626',
+                                borderColor0: '#16a34a'
+                            }
+                        },
+                        {
+                            name: 'MA5',
+                            type: 'line',
+                            data: ma5,
+                            smooth: true,
+                            showSymbol: false,
+                            lineStyle: { width: 2.5, color: '#3b82f6' }, // Thicker MA line
+                            itemStyle: { color: '#3b82f6' }
+                        },
+                        {
+                            name: 'MA10',
+                            type: 'line',
+                            data: ma10,
+                            smooth: true,
+                            showSymbol: false,
+                            lineStyle: { width: 2.5, color: '#f59e0b' }, // Thicker MA line
+                            itemStyle: { color: '#f59e0b' }
+                        }
+                    ]
+                };
+
+                klineChart.setOption(option);
+            }
+            
+            // Resize charts on window resize
+            window.addEventListener("resize", function() {
+                if (yearlyChart) yearlyChart.resize();
+                if (quarterlyChart) quarterlyChart.resize();
+                if (klineChart) klineChart.resize();
+            });
+        });
+    </script>
+</body>
+</html>
